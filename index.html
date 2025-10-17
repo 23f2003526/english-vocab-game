@@ -32,6 +32,7 @@
     user-select: none;
     position: relative;
     z-index: 1;
+    min-height: 460px;
   }
 
   #title {
@@ -41,11 +42,18 @@
     text-shadow: 1px 1px 3px #ade1fc;
   }
 
+  #score {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1565c0;
+    margin-bottom: 15px;
+  }
+
   #question {
     font-size: 1.3rem;
     margin-bottom: 25px;
     text-align: center;
-    min-height: 60px;
+    min-height: 70px;
   }
 
   .options {
@@ -91,355 +99,464 @@
   .option-btn.disabled {
     cursor: default;
     pointer-events: none;
+    opacity: 0.85;
   }
 
-  #feedback {
-    font-size: 1.3rem;
-    font-weight: 700;
-    min-height: 45px;
-    margin-bottom: 15px;
-    text-align: center;
-    color: #444;
-    user-select: none;
-  }
-
-  #score {
-    font-size: 1.1rem;
-    color: #1976d2;
-    font-weight: 700;
-    margin-bottom: 15px;
-  }
-
-  #next-btn {
+  #next-btn, #start-btn, #restart-btn {
     background: #1976d2;
     border: none;
     border-radius: 12px;
     color: white;
     font-weight: 700;
-    font-size: 1.2rem;
-    padding: 10px 25px;
+    font-size: 1.1rem;
+    padding: 12px 30px;
     cursor: pointer;
     transition: background-color 0.3s ease;
     user-select: none;
-    display: none;
   }
-  #next-btn:hover {
-    background: #155a9c;
+  #next-btn:hover:not(:disabled), #start-btn:hover, #restart-btn:hover {
+    background-color: #125ea9;
   }
   #next-btn:disabled {
-    background: #9999a1;
+    background-color: #90caf9;
     cursor: default;
   }
 
-  /* Confetti Canvas */
+  #summary {
+    font-size: 1.2rem;
+    color: #1976d2;
+    margin-top: 15px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  /* Confetti canvas */
   #confetti-canvas {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
     pointer-events: none;
+    top: 0; left: 0; width: 100%; height: 100%;
     z-index: 1000;
   }
 
-  /* Sad animation container */
-  #sad-container {
-    position: fixed;
+  /* Sad face container */
+  #sad-face {
+    position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    width: 120px;
+    height: 120px;
     pointer-events: none;
-    z-index: 1001;
-    display: none;
-    user-select: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    z-index: 900;
   }
-
-  /* Sad face style */
-  #sad-face {
-    width: 80px;
-    height: 80px;
-  }
-
-  /* Sad face eyes and mouth animation */
-  .eye {
-    animation: blink 4s infinite;
-  }
-
-  .mouth-sad {
+  #sad-face svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
     stroke: #e53935;
-    stroke-width: 4;
-    fill: transparent;
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
-  @keyframes blink {
-    0%, 10%, 20%, 30%, 100% {
-      transform: scaleY(1);
-    }
-    15%, 25% {
-      transform: scaleY(0.1);
-    }
-  }
 </style>
 </head>
 <body>
-  <canvas id="confetti-canvas"></canvas>
-  <div id="sad-container" aria-live="polite" role="img" aria-label="Sad face">
-    <svg id="sad-face" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-      <circle cx="32" cy="32" r="30" fill="#fdecea" stroke="#e53935" stroke-width="4"/>
-      <ellipse class="eye" cx="20" cy="25" rx="5" ry="8" fill="#e53935" />
-      <ellipse class="eye" cx="44" cy="25" rx="5" ry="8" fill="#e53935" />
-      <path class="mouth-sad" d="M20 45 Q32 35 44 45" />
-    </svg>
-  </div>
+  <canvas id="confetti-canvas" aria-hidden="true"></canvas>
 
-  <div id="quiz-container" role="main" aria-live="polite" aria-atomic="true" aria-label="English vocabulary quiz">
-    <div id="title">English Vocabulary Quiz</div>
-    <div id="score" aria-live="polite" aria-atomic="true"></div>
+  <div id="quiz-container" role="main" aria-labelledby="title">
+    <h1 id="title">English Vocabulary Quiz</h1>
+    <div id="score" aria-live="polite" aria-atomic="true">Score: 0/0</div>
     <div id="question" tabindex="0"></div>
-    <div class="options"></div>
-    <div id="feedback" aria-live="assertive"></div>
-    <button id="next-btn" aria-label="Next question">Next</button>
+    <div class="options" role="list" aria-label="Answer choices"></div>
+    <button id="next-btn" disabled aria-label="Next question">Next</button>
+    <button id="start-btn" style="display:none;">Start New Round</button>
+    <button id="restart-btn" style="display:none;">Restart Quiz</button>
+    <div id="summary" aria-live="polite" aria-atomic="true"></div>
+
+    <div id="sad-face" aria-hidden="true">
+      <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+        <circle cx="32" cy="32" r="30" stroke="#e53935" fill="#fdecea"/>
+        <circle cx="20" cy="25" r="5" fill="#e53935"/>
+        <circle cx="44" cy="25" r="5" fill="#e53935"/>
+        <path d="M20 45 Q32 35 44 45" stroke="#e53935" stroke-width="4" fill="none" />
+      </svg>
+    </div>
   </div>
 
 <script>
 (() => {
-  const quizData = [
+  // Full question bank (minimum 20 questions)
+  const questionBank = [
     {
-      question: "What is the opposite of 'happy'?",
-      options: ["Cheerful", "Sad", "Brave", "Smart"],
-      answerIndex: 1
+      question: "What does 'benevolent' mean?",
+      options: ["Kind and generous", "Angry", "Very small", "Very old"],
+      answer: 0,
     },
     {
-      question: "Choose the correct meaning of 'enormous'.",
-      options: ["Very small", "Huge", "Fast", "Funny"],
-      answerIndex: 1
+      question: "Which word is a synonym for 'happy'?",
+      options: ["Sad", "Joyful", "Tired", "Hungry"],
+      answer: 1,
     },
     {
-      question: "Select the synonym of 'quick'.",
-      options: ["Slow", "Fast", "Lazy", "Tired"],
-      answerIndex: 1
+      question: "What is the meaning of 'enormous'?",
+      options: ["Tiny", "Very big", "Colorful", "Smooth"],
+      answer: 1,
     },
     {
-      question: "What does 'ancient' mean?",
-      options: ["Very old", "New", "Expensive", "Heavy"],
-      answerIndex: 0
+      question: "Which word means the opposite of 'difficult'?",
+      options: ["Easy", "Hard", "Long", "Noisy"],
+      answer: 0,
     },
     {
-      question: "Choose the word that means 'to jump high'.",
-      options: ["Run", "Hop", "Fly", "Fall"],
-      answerIndex: 1
-    }
+      question: "Choose the correct meaning of 'fragile'.",
+      options: ["Strong", "Delicate", "Heavy", "Bright"],
+      answer: 1,
+    },
+    {
+      question: "What does 'rapid' mean?",
+      options: ["Slow", "Fast", "Late", "Early"],
+      answer: 1,
+    },
+    {
+      question: "Which word describes a feeling of fear?",
+      options: ["Brave", "Anxious", "Excited", "Bored"],
+      answer: 1,
+    },
+    {
+      question: "What is a synonym of 'glimpse'?",
+      options: ["Look quickly", "Listen carefully", "Touch slowly", "Run fast"],
+      answer: 0,
+    },
+    {
+      question: "Which word means 'to walk slowly'?",
+      options: ["Dash", "Stroll", "Run", "Jump"],
+      answer: 1,
+    },
+    {
+      question: "Choose the best meaning of 'ancient'.",
+      options: ["Very old", "Brand new", "Big", "Small"],
+      answer: 0,
+    },
+    {
+      question: "What does 'gigantic' mean?",
+      options: ["Small", "Huge", "Noisy", "Quiet"],
+      answer: 1,
+    },
+    {
+      question: "Which word means 'extremely tired'?",
+      options: ["Energetic", "Exhausted", "Happy", "Bored"],
+      answer: 1,
+    },
+    {
+      question: "What word means 'very cold'?",
+      options: ["Hot", "Warm", "Chilly", "Bright"],
+      answer: 2,
+    },
+    {
+      question: "Choose the opposite of 'bright'.",
+      options: ["Dark", "Light", "Shiny", "Luminous"],
+      answer: 0,
+    },
+    {
+      question: "What is the meaning of 'cautious'?",
+      options: ["Careful", "Reckless", "Happy", "Lazy"],
+      answer: 0,
+    },
+    {
+      question: "Which word means 'to jump high'?",
+      options: ["Hop", "Slide", "Dive", "Climb"],
+      answer: 0,
+    },
+    {
+      question: "What does 'delicious' describe?",
+      options: ["Food taste", "Weather", "Sound", "Clothes"],
+      answer: 0,
+    },
+    {
+      question: "Choose the best meaning of 'brave'.",
+      options: ["Cowardly", "Fearless", "Sad", "Lazy"],
+      answer: 1,
+    },
+    {
+      question: "Which word means 'a place to read books'?",
+      options: ["Library", "Gym", "Cafeteria", "Playground"],
+      answer: 0,
+    },
+    {
+      question: "What is a synonym of 'quickly'?",
+      options: ["Slowly", "Rapidly", "Quietly", "Loudly"],
+      answer: 1,
+    },
+    // Add more questions here if desired
   ];
+
+  const totalQuestionsPerRound = 5;
 
   const quizContainer = document.getElementById('quiz-container');
   const questionEl = document.getElementById('question');
-  const optionsEl = quizContainer.querySelector('.options');
-  const feedbackEl = document.getElementById('feedback');
-  const nextBtn = document.getElementById('next-btn');
+  const optionsEl = document.querySelector('.options');
   const scoreEl = document.getElementById('score');
+  const nextBtn = document.getElementById('next-btn');
+  const startBtn = document.getElementById('start-btn');
+  const restartBtn = document.getElementById('restart-btn');
+  const summaryEl = document.getElementById('summary');
+  const sadFaceEl = document.getElementById('sad-face');
   const confettiCanvas = document.getElementById('confetti-canvas');
-  const sadContainer = document.getElementById('sad-container');
 
-  let currentQuestion = 0;
+  let currentQuestionIndex = 0;
   let score = 0;
-  let animationRunning = false;
+  let currentQuestions = [];
+
+  function shuffleArray(arr) {
+    for (let i = arr.length -1; i > 0; i--) {
+      const j = Math.floor(Math.random()*(i+1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+
+  function pickRandomQuestions() {
+    const questionsCopy = questionBank.slice();
+    shuffleArray(questionsCopy);
+    // select first 5 questions
+    currentQuestions = questionsCopy.slice(0, totalQuestionsPerRound);
+  }
+
+  function resetState() {
+    nextBtn.disabled = true;
+    summaryEl.textContent = '';
+    startBtn.style.display = 'none';
+    restartBtn.style.display = 'none';
+    sadFaceEl.style.opacity = 0;
+    optionsEl.innerHTML = '';
+  }
 
   function updateScore() {
-    scoreEl.textContent = `Score: ${score} / ${quizData.length}`;
+    scoreEl.textContent = `Score: ${score}/${currentQuestionIndex}`;
   }
 
-  function clearFeedback() {
-    feedbackEl.textContent = '';
-    feedbackEl.style.color = '#444';
-  }
-
-  function loadQuestion() {
-    clearFeedback();
-    nextBtn.style.display = 'none';
-    const q = quizData[currentQuestion];
+  function showQuestion() {
+    resetState();
+    const q = currentQuestions[currentQuestionIndex];
     questionEl.textContent = q.question;
-    optionsEl.innerHTML = '';
-    q.options.forEach((opt, i) => {
+    questionEl.focus();
+
+    q.options.forEach((option, i) => {
       const btn = document.createElement('button');
-      btn.type = 'button';
       btn.className = 'option-btn';
-      btn.textContent = opt;
+      btn.textContent = option;
+      btn.setAttribute('role', 'listitem');
+      btn.setAttribute('aria-label', `Option ${i + 1}: ${option}`);
       btn.dataset.index = i;
-      btn.setAttribute('aria-label', `Answer option ${i+1}: ${opt}`);
-      btn.addEventListener('click', () => selectOption(btn, i));
+      btn.type = "button";
+      btn.addEventListener('click', selectAnswer);
       optionsEl.appendChild(btn);
     });
-    updateScore();
-    questionEl.focus();
   }
 
-  function disableOptions() {
-    const btns = optionsEl.querySelectorAll('.option-btn');
-    btns.forEach(b => b.classList.add('disabled'));
-  }
+  function selectAnswer(e) {
+    const selectedBtn = e.target;
+    const selectedIndex = Number(selectedBtn.dataset.index);
+    const correctIndex = currentQuestions[currentQuestionIndex].answer;
 
-  // Confetti implementation adapted and simplified from open source approaches
-  class ConfettiParticle {
-    constructor(x, y, ctx, colors) {
-      this.x = x;
-      this.y = y;
-      this.ctx = ctx;
-      this.colors = colors;
-      this.size = (Math.random() * 7) + 7;
-      this.weight = (Math.random() * 0.5) + 0.7;
-      this.angle = Math.random() * 2 * Math.PI;
-      this.spin = (Math.random() - 0.5) * 0.2;
-      this.color = this.colors[Math.floor(Math.random() * this.colors.length)];
-      this.tilt = Math.random() * 10 - 10;
-      this.tiltSpeed = (Math.random() * 0.12) + 0.05;
-      this.opacity = 1;
-      this.life = 100;
-    }
-    update() {
-      this.y += this.weight;
-      this.x += Math.sin(this.angle) * 2;
-      this.angle += this.spin;
-      this.tilt += this.tiltSpeed;
-      this.opacity -= 0.008;
-      this.life--;
-    }
-    draw() {
-      this.ctx.beginPath();
-      this.ctx.lineWidth = this.size / 2;
-      this.ctx.strokeStyle = `rgba(${this.color},${this.opacity.toFixed(2)})`;
-      this.ctx.moveTo(this.x + this.tilt, this.y);
-      this.ctx.lineTo(this.x, this.y + this.tilt + (this.size / 2));
-      this.ctx.stroke();
-    }
-    alive() {
-      return this.opacity > 0 && this.life > 0;
-    }
-  }
+    if (selectedBtn.classList.contains('disabled')) return;
 
-  class Confetti {
-    constructor(canvas) {
-      this.canvas = canvas;
-      this.ctx = canvas.getContext('2d');
-      this.particles = [];
-      this.colors = [
-        '255, 0, 0',       // red
-        '0, 255, 0',       // green
-        '0, 0, 255',       // blue
-        '255, 255, 0',     // yellow
-        '255, 0, 255',     // magenta
-        '0, 255, 255'      // cyan
-      ];
-      this.animating = false;
-      this.resize();
-      window.addEventListener('resize', () => this.resize());
-    }
-    resize() {
-      this.canvas.width = window.innerWidth;
-      this.canvas.height = window.innerHeight;
-    }
-    start() {
-      this.animating = true;
-      this.particles = [];
-      // generate initial confetti burst
-      const count = 150;
-      for (let i = 0; i < count; i++) {
-        const x = Math.random() * this.canvas.width;
-        const y = Math.random() * this.canvas.height/2;
-        this.particles.push(new ConfettiParticle(x, y, this.ctx, this.colors));
-      }
-      this.animate();
-    }
-    animate() {
-      if (!this.animating) return;
-      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      this.particles.forEach(p => {
-        p.update();
-        p.draw();
-      });
-      this.particles = this.particles.filter(p => p.alive());
-      if (this.particles.length > 0) {
-        requestAnimationFrame(() => this.animate());
-      } else {
-        this.animating = false;
-        confettiCanvas.style.display = 'none';
-      }
-    }
-    trigger() {
-      if (this.animating) return;
-      confettiCanvas.style.display = 'block';
-      this.start();
-    }
-  }
+    // Disable all buttons
+    Array.from(optionsEl.children).forEach(btn => {
+      btn.classList.add('disabled');
+      btn.setAttribute('aria-disabled', 'true');
+    });
 
-  const confetti = new Confetti(confettiCanvas);
-
-  function showSadAnimation() {
-    if (animationRunning) return;
-    animationRunning = true;
-    sadContainer.style.display = 'block';
-    // Animate fadeout after 2.5s
-    sadContainer.style.opacity = '1';
-    setTimeout(() => {
-      sadContainer.style.transition = 'opacity 1s ease';
-      sadContainer.style.opacity = '0';
-    }, 2500);
-    setTimeout(() => {
-      sadContainer.style.transition = '';
-      sadContainer.style.display = 'none';
-      sadContainer.style.opacity = '1';
-      animationRunning = false;
-    }, 3500);
-  }
-
-  function selectOption(button, index) {
-    if (animationRunning) return;
-    disableOptions();
-    const correctIndex = quizData[currentQuestion].answerIndex;
-    if (index === correctIndex) {
-      button.classList.add('correct');
-      feedbackEl.textContent = "Correct! 🎉";
-      feedbackEl.style.color = "#4caf50";
+    if (selectedIndex === correctIndex) {
+      selectedBtn.classList.add('correct');
       score++;
       updateScore();
-      confetti.trigger();
+      triggerConfetti();
     } else {
-      button.classList.add('incorrect');
-      // Mark correct answer
-      const correctBtn = optionsEl.querySelector(`.option-btn[data-index="${correctIndex}"]`);
-      if(correctBtn) correctBtn.classList.add('correct');
-      feedbackEl.textContent = "Oops! That's not right.";
-      feedbackEl.style.color = "#e53935";
-      showSadAnimation();
+      selectedBtn.classList.add('incorrect');
+      // highlight correct answer
+      const correctBtn = optionsEl.querySelector(`button[data-index="${correctIndex}"]`);
+      if (correctBtn) {
+        correctBtn.classList.add('correct');
+      }
+      updateScore();
+      triggerSadFace();
     }
-    nextBtn.style.display = currentQuestion < quizData.length - 1 ? 'inline-block' : 'inline-block';
+    nextBtn.disabled = false;
     nextBtn.focus();
   }
 
-  nextBtn.addEventListener('click', () => {
-    currentQuestion++;
-    if (currentQuestion < quizData.length) {
-      loadQuestion();
+  function showSummary() {
+    questionEl.textContent = '';
+    optionsEl.innerHTML = '';
+    scoreEl.textContent = `Final Score: ${score}/${currentQuestions.length}`;
+
+    let message = '';
+    const percent = (score / currentQuestions.length) * 100;
+    if (percent === 100) {
+      message = "Excellent! You got all correct! 🌟";
+    } else if (percent >= 80) {
+      message = "Great job! Keep it up! 👍";
+    } else if (percent >= 50) {
+      message = "Good effort! Practice makes perfect! 🙂";
     } else {
-      showFinalResults();
+      message = "Don't worry! Try again and you'll improve! 💪";
+    }
+
+    summaryEl.textContent = message;
+
+    nextBtn.style.display = 'none';
+    restartBtn.style.display = 'inline-block';
+    restartBtn.focus();
+  }
+
+  nextBtn.addEventListener('click', () => {
+    currentQuestionIndex++;
+    if (currentQuestionIndex < currentQuestions.length) {
+      showQuestion();
+    } else {
+      showSummary();
     }
   });
 
-  function showFinalResults() {
-    quizContainer.innerHTML = `
-      <div id="title">Quiz Complete!</div>
-      <div id="score" aria-live="polite">Your final score is ${score} out of ${quizData.length}.</div>
-      <div style="font-size:1.4rem; font-weight:700; margin-top:15px; text-align:center; color:#1976d2;">
-        ${score === quizData.length ? "Excellent! You got all correct! 🎉🎉🎉" :
-          score >= quizData.length/2 ? "Good job! Keep practicing! 👍" :
-          "Don't worry, try again to improve. 💪"}
-      </div>
-    `;
+  restartBtn.addEventListener('click', () => {
+    startNewRound();
+  });
+
+  startBtn.addEventListener('click', () => {
+    startNewRound();
+  });
+
+  function startNewRound() {
+    score = 0;
+    currentQuestionIndex = 0;
+    pickRandomQuestions();
+    updateScore();
+
+    nextBtn.style.display = 'inline-block';
+    nextBtn.disabled = true;
+    startBtn.style.display = 'none';
+    restartBtn.style.display = 'none';
+    summaryEl.textContent = '';
+
+    showQuestion();
   }
 
-  loadQuestion();
-})();
+  // Initialize first round on page load
+  startNewRound();
 
+  // Accessibility enhancement: support keyboard navigation on options
+  optionsEl.addEventListener('keydown', (e) => {
+    if (e.target.classList.contains('option-btn')) {
+      let index = Array.from(optionsEl.children).indexOf(e.target);
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        let nextIndex = (index + 1) % optionsEl.children.length;
+        optionsEl.children[nextIndex].focus();
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        let prevIndex = (index + optionsEl.children.length - 1) % optionsEl.children.length;
+        optionsEl.children[prevIndex].focus();
+      }
+    }
+  });
+
+  // Confetti implementation
+  const confettiCtx = confettiCanvas.getContext('2d');
+  let confettiPieces = [];
+  let confettiRunning = false;
+
+  const confettiColors = [
+    "#4caf50",
+    "#1976d2",
+    "#e53935",
+    "#ffb300",
+    "#8e24aa",
+  ];
+
+  class ConfettiPiece {
+    constructor(x, y) {
+      this.x = x;
+      this.y = y;
+      this.size = 8 + Math.random() * 6;
+      this.color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+      this.tilt = Math.random() * 10 - 10;
+      this.tiltAngle = 0;
+      this.tiltAngleIncrement = (Math.random() * 0.07) + 0.05;
+      this.velocityY = 1 + Math.random() * 2;
+      this.opacity = 1;
+    }
+    update() {
+      this.y += this.velocityY;
+      this.tiltAngle += this.tiltAngleIncrement;
+      this.tilt = Math.sin(this.tiltAngle) * 15;
+      this.opacity -= 0.005;
+    }
+    draw(ctx) {
+      ctx.beginPath();
+      ctx.lineWidth = this.size / 2;
+      ctx.strokeStyle = this.color;
+      ctx.globalAlpha = this.opacity;
+      ctx.moveTo(this.x + this.tilt + this.size/2, this.y);
+      ctx.lineTo(this.x + this.tilt, this.y + this.tilt + this.size/2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function resizeCanvas() {
+    confettiCanvas.width = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  function triggerConfetti() {
+    if (confettiRunning) return;
+    confettiRunning = true;
+    confettiPieces = [];
+
+    const count = 100;
+    for (let i = 0; i < count; i++) {
+      confettiPieces.push(new ConfettiPiece(Math.random() * confettiCanvas.width, Math.random() * confettiCanvas.height - confettiCanvas.height));
+    }
+
+    let animationId;
+    function animate() {
+      confettiCtx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+      confettiPieces.forEach((p, i) => {
+        p.update();
+        if (p.opacity <= 0 || p.y > confettiCanvas.height) {
+          confettiPieces[i] = new ConfettiPiece(Math.random() * confettiCanvas.width, -10);
+        }
+        p.draw(confettiCtx);
+      });
+      animationId = requestAnimationFrame(animate);
+    }
+    animate();
+
+    setTimeout(() => {
+      cancelAnimationFrame(animationId);
+      confettiCtx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+      confettiRunning = false;
+    }, 3000);
+  }
+
+  // Sad face animation
+  let sadFaceTimeout = null;
+  function triggerSadFace() {
+    if (sadFaceTimeout) {
+      clearTimeout(sadFaceTimeout);
+    }
+    sadFaceEl.style.opacity = 1;
+    sadFaceTimeout = setTimeout(() => {
+      sadFaceEl.style.opacity = 0;
+    }, 1500);
+  }
+
+})()
 </script>
-
 </body>
 </html>
