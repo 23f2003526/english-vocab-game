@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Class 6 English Vocabulary Quiz</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&display=swap');
+
+  body {
+    margin: 0;
+    background: linear-gradient(135deg, #A1C4FD 0%, #C2E9FB 100%);
+    font-family: 'Comic Neue', cursive, sans-serif;
+    display: flex;
+    height: 100vh;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+
+  #quiz-container {
+    background: #ffffffdd;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    max-width: 450px;
+    width: 100%;
+    padding: 30px 25px 40px 25px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+  }
+
+  #title {
+    font-size: 2.4rem;
+    margin-bottom: 25px;
+    color: #1976d2;
+    text-shadow: 1px 1px 3px #ade1fc;
+  }
+
+  #question {
+    font-size: 1.3rem;
+    margin-bottom: 25px;
+    text-align: center;
+    min-height: 60px;
+  }
+
+  .options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    width: 100%;
+    margin-bottom: 25px;
+  }
+
+  .option-btn {
+    background: #f0f7ff;
+    border: 3px solid #1976d2;
+    border-radius: 12px;
+    font-weight: 700;
+    color: #1976d2;
+    cursor: pointer;
+    padding: 12px 10px;
+    font-size: 1.1rem;
+    transition: 0.3s all ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .option-btn:hover:not(.disabled) {
+    background-color: #d0e6ff;
+    transform: scale(1.05);
+  }
+  .option-btn:active:not(.disabled) {
+    transform: scale(0.97);
+  }
+
+  .option-btn.correct {
+    background: #4caf50;
+    border-color: #4caf50;
+    color: #fff;
+  }
+  .option-btn.incorrect {
+    background: #e53935;
+    border-color: #e53935;
+    color: #fff;
+  }
+  .option-btn.disabled {
+    cursor: default;
+    pointer-events: none;
+  }
+
+  #feedback {
+    font-size: 1.3rem;
+    font-weight: 700;
+    min-height: 30px;
+    margin-bottom: 25px;
+    color: #1976d2;
+    animation: popIn 0.5s ease forwards;
+  }
+
+  #score {
+    font-size: 1rem;
+    color: #555;
+    margin-bottom: 15px;
+  }
+
+  #next-btn {
+    background-color: #1976d2;
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 10px 28px;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 12px #1767bbaa;
+    transition: background-color 0.25s ease;
+    user-select: none;
+  }
+  #next-btn:hover:not(:disabled) {
+    background-color: #155fa0;
+  }
+  #next-btn:disabled {
+    cursor: not-allowed;
+    background-color: #9bbde9;
+  }
+
+  @keyframes popIn {
+    0% { opacity: 0; transform: scale(0.7);}
+    100% { opacity: 1; transform: scale(1);}
+  }
+
+  #completion-message {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1976d2;
+    text-align: center;
+    margin-top: 15px;
+  }
+
+</style>
+</head>
+<body>
+  <main id="quiz-container" aria-live="polite">
+    <h1 id="title">English Vocabulary Quiz</h1>
+    <div id="score">Score: 0 / 0</div>
+    <div id="question" aria-label="Question"></div>
+    <div class="options" role="list" aria-label="Options">
+      <!-- Options buttons inserted here dynamically -->
+    </div>
+    <div id="feedback" aria-live="assertive"></div>
+    <button id="next-btn" disabled aria-disabled="true" aria-label="Next question">Next</button>
+    <div id="completion-message" role="alert"></div>
+  </main>
+
+<script>
+(() => {
+  const questions = [
+    {
+      question: "What does the word 'brave' mean?",
+      options: ["Scared", "Courageous", "Hungry", "Quiet"],
+      answer: 1
+    },
+    {
+      question: "Which word means 'to run very fast'?",
+      options: ["Jump", "Walk", "Sprint", "Sit"],
+      answer: 2
+    },
+    {
+      question: "Choose the word that means 'a pet animal that barks'.",
+      options: ["Cat", "Dog", "Rabbit", "Bird"],
+      answer: 1
+    },
+    {
+      question: "What is the meaning of 'delicious'?",
+      options: ["Tastes good", "Looks sad", "Feels cold", "Sounds loud"],
+      answer: 0
+    },
+    {
+      question: "Which word means 'a place to learn'?",
+      options: ["Hospital", "Store", "School", "Park"],
+      answer: 2
+    },
+    {
+      question: "Choose the word that means 'very happy'.",
+      options: ["Angry", "Joyful", "Sleepy", "Hungry"],
+      answer: 1
+    },
+    {
+      question: "What does 'ancient' mean?",
+      options: ["Very old", "Very new", "Very tall", "Very fast"],
+      answer: 0
+    },
+    {
+      question: "Which word means 'a small flying insect that makes honey'?",
+      options: ["Bee", "Butterfly", "Ant", "Spider"],
+      answer: 0
+    },
+    {
+      question: "Choose the word that means 'to look at carefully'.",
+      options: ["Listen", "Touch", "Observe", "Run"],
+      answer: 2
+    },
+    {
+      question: "What does the word 'honest' mean?",
+      options: ["Truthful", "Lazy", "Brave", "Funny"],
+      answer: 0
+    }
+  ];
+
+  const quizContainer = document.getElementById('quiz-container');
+  const questionEl = document.getElementById('question');
+  const optionsContainer = quizContainer.querySelector('.options');
+  const feedbackEl = document.getElementById('feedback');
+  const nextBtn = document.getElementById('next-btn');
+  const scoreEl = document.getElementById('score');
+  const completionMessage = document.getElementById('completion-message');
+
+  let currentQuestionIndex = 0;
+  let score = 0;
+  let answered = false;
+
+  function shuffleArray(arr) {
+    for(let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random()* (i+1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+
+  // We want question options to be randomized for challenge
+  // But need to track correct answer index accordingly -
+  // Let's prepare data with shuffled options before starting
+  function prepareQuestions(questions) {
+    return questions.map(q => {
+      const originalAnswerText = q.options[q.answer];
+      const shuffledOptions = q.options.slice();
+      shuffleArray(shuffledOptions);
+      const newAnswerIndex = shuffledOptions.indexOf(originalAnswerText);
+      return {...q, options: shuffledOptions, answer: newAnswerIndex};
+    });
+  }
+
+  let quizQuestions = prepareQuestions(questions);
+
+  function updateScore() {
+    scoreEl.textContent = `Score: ${score} / ${quizQuestions.length}`;
+  }
+
+  function clearFeedback() {
+    feedbackEl.textContent = "";
+    feedbackEl.style.color = "#1976d2";
+  }
+
+  function resetOptions() {
+    optionsContainer.innerHTML = "";
+  }
+
+  function disableOptions() {
+    const optionButtons = optionsContainer.querySelectorAll("button.option-btn");
+    optionButtons.forEach(btn => {
+      btn.classList.add("disabled");
+      btn.setAttribute("disabled", "true");
+    });
+  }
+
+  function enableOptions() {
+    const optionButtons = optionsContainer.querySelectorAll("button.option-btn");
+    optionButtons.forEach(btn => {
+      btn.classList.remove("disabled", "correct", "incorrect");
+      btn.removeAttribute("disabled");
+    });
+  }
+
+  function animateCorrect(button) {
+    button.classList.add("correct");
+    button.classList.add("bounce");
+    setTimeout(() => {
+      button.classList.remove("bounce");
+    }, 600);
+  }
+  function animateIncorrect(button) {
+    button.classList.add("incorrect");
+    button.classList.add("shake");
+    setTimeout(() => {
+      button.classList.remove("shake");
+    }, 600);
+  }
+
+  // CSS Animations for shake and bounce to be injected dynamically because we want minimal styles
+  const style = document.createElement("style");
+  style.textContent = `
+    .shake {
+      animation: shakeAnim 0.5s;
+    }
+    @keyframes shakeAnim {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-10px); }
+      40%, 80% { transform: translateX(10px); }
+    }
+    .bounce {
+      animation: bounceAnim 0.5s;
+    }
+    @keyframes bounceAnim {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+    }
+  `;
+  document.head.appendChild(style);
+
+  function showQuestion() {
+    resetOptions();
+    clearFeedback();
+    enableOptions();
+
+    answered = false;
+
+    if(currentQuestionIndex >= quizQuestions.length){
+      questionEl.textContent = "";
+      completionMessage.textContent = `🎉 Well done! You scored ${score} out of ${quizQuestions.length} 🎉`;
+      nextBtn.disabled = true;
+      nextBtn.setAttribute("aria-disabled", "true");
+      return;
+    }
+
+    completionMessage.textContent = "";
+
+    const currentQ = quizQuestions[currentQuestionIndex];
+    questionEl.textContent = currentQ.question;
+
+    currentQ.options.forEach((opt, idx) => {
+      const btn = document.createElement('button');
+      btn.type = "button";
+      btn.className = "option-btn";
+      btn.textContent = opt;
+      btn.setAttribute("role", "listitem");
+      btn.setAttribute("aria-pressed", "false");
+      btn.dataset.index = idx;
+      btn.addEventListener('click', () => handleAnswer(idx, btn));
+      optionsContainer.appendChild(btn);
+    });
+
+    nextBtn.disabled = true;
+    nextBtn.setAttribute("aria-disabled", "true");
+
+    updateScore();
+  }
+
+  function handleAnswer(selectedIndex, button) {
+    if(answered) return;
+    answered = true;
+
+    const currentQ = quizQuestions[currentQuestionIndex];
+    disableOptions();
+
+    if(selectedIndex === currentQ.answer) {
+      score++;
+      feedbackEl.style.color = '#4caf50';
+      feedbackEl.textContent = "Correct! 🎉";
+      button.classList.add("correct");
+      animateCorrect(button);
+    }
+    else {
+      feedbackEl.style.color = '#e53935';
+      feedbackEl.textContent = "Try again! ❌";
+      button.classList.add("incorrect");
+      animateIncorrect(button);
+
+      // Highlight the correct answer
+      const optionButtons = optionsContainer.querySelectorAll("button.option-btn");
+      optionButtons.forEach(btn => {
+        if(parseInt(btn.dataset.index, 10) === currentQ.answer){
+          btn.classList.add("correct");
+        }
+      });
+    }
+
+    nextBtn.disabled = false;
+    nextBtn.removeAttribute("aria-disabled");
+    updateScore();
+  }
+
+  nextBtn.addEventListener('click', () => {
+    currentQuestionIndex++;
+    showQuestion();
+  });
+
+  // Start quiz
+  showQuestion();
+
+})();
+
+</script>
+</body>
+</html>
