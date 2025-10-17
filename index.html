@@ -16,6 +16,7 @@
     justify-content: center;
     align-items: center;
     padding: 20px;
+    overflow-x: hidden;
   }
 
   #quiz-container {
@@ -29,6 +30,8 @@
     flex-direction: column;
     align-items: center;
     user-select: none;
+    position: relative;
+    z-index: 1;
   }
 
   #title {
@@ -65,6 +68,7 @@
     transition: 0.3s all ease;
     position: relative;
     overflow: hidden;
+    user-select: none;
   }
   .option-btn:hover:not(.disabled) {
     background-color: #d0e6ff;
@@ -92,303 +96,350 @@
   #feedback {
     font-size: 1.3rem;
     font-weight: 700;
-    min-height: 30px;
-    margin-bottom: 25px;
-    color: #1976d2;
-    animation: popIn 0.5s ease forwards;
+    min-height: 45px;
+    margin-bottom: 15px;
+    text-align: center;
+    color: #444;
+    user-select: none;
   }
 
   #score {
-    font-size: 1rem;
-    color: #555;
+    font-size: 1.1rem;
+    color: #1976d2;
+    font-weight: 700;
     margin-bottom: 15px;
   }
 
   #next-btn {
-    background-color: #1976d2;
+    background: #1976d2;
     border: none;
     border-radius: 12px;
     color: white;
     font-weight: 700;
+    font-size: 1.2rem;
+    padding: 10px 25px;
     cursor: pointer;
-    padding: 10px 28px;
-    font-size: 1.1rem;
-    box-shadow: 0 4px 12px #1767bbaa;
-    transition: background-color 0.25s ease;
+    transition: background-color 0.3s ease;
     user-select: none;
+    display: none;
   }
-  #next-btn:hover:not(:disabled) {
-    background-color: #155fa0;
+  #next-btn:hover {
+    background: #155a9c;
   }
   #next-btn:disabled {
-    cursor: not-allowed;
-    background-color: #9bbde9;
+    background: #9999a1;
+    cursor: default;
   }
 
-  @keyframes popIn {
-    0% { opacity: 0; transform: scale(0.7);}
-    100% { opacity: 1; transform: scale(1);}
+  /* Confetti Canvas */
+  #confetti-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 1000;
   }
 
-  #completion-message {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #1976d2;
-    text-align: center;
-    margin-top: 15px;
+  /* Sad animation container */
+  #sad-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 1001;
+    display: none;
+    user-select: none;
   }
 
+  /* Sad face style */
+  #sad-face {
+    width: 80px;
+    height: 80px;
+  }
+
+  /* Sad face eyes and mouth animation */
+  .eye {
+    animation: blink 4s infinite;
+  }
+
+  .mouth-sad {
+    stroke: #e53935;
+    stroke-width: 4;
+    fill: transparent;
+  }
+
+  @keyframes blink {
+    0%, 10%, 20%, 30%, 100% {
+      transform: scaleY(1);
+    }
+    15%, 25% {
+      transform: scaleY(0.1);
+    }
+  }
 </style>
 </head>
 <body>
-  <main id="quiz-container" aria-live="polite">
-    <h1 id="title">English Vocabulary Quiz</h1>
-    <div id="score">Score: 0 / 0</div>
-    <div id="question" aria-label="Question"></div>
-    <div class="options" role="list" aria-label="Options">
-      <!-- Options buttons inserted here dynamically -->
-    </div>
+  <canvas id="confetti-canvas"></canvas>
+  <div id="sad-container" aria-live="polite" role="img" aria-label="Sad face">
+    <svg id="sad-face" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+      <circle cx="32" cy="32" r="30" fill="#fdecea" stroke="#e53935" stroke-width="4"/>
+      <ellipse class="eye" cx="20" cy="25" rx="5" ry="8" fill="#e53935" />
+      <ellipse class="eye" cx="44" cy="25" rx="5" ry="8" fill="#e53935" />
+      <path class="mouth-sad" d="M20 45 Q32 35 44 45" />
+    </svg>
+  </div>
+
+  <div id="quiz-container" role="main" aria-live="polite" aria-atomic="true" aria-label="English vocabulary quiz">
+    <div id="title">English Vocabulary Quiz</div>
+    <div id="score" aria-live="polite" aria-atomic="true"></div>
+    <div id="question" tabindex="0"></div>
+    <div class="options"></div>
     <div id="feedback" aria-live="assertive"></div>
-    <button id="next-btn" disabled aria-disabled="true" aria-label="Next question">Next</button>
-    <div id="completion-message" role="alert"></div>
-  </main>
+    <button id="next-btn" aria-label="Next question">Next</button>
+  </div>
 
 <script>
 (() => {
-  const questions = [
+  const quizData = [
     {
-      question: "What does the word 'brave' mean?",
-      options: ["Scared", "Courageous", "Hungry", "Quiet"],
-      answer: 1
+      question: "What is the opposite of 'happy'?",
+      options: ["Cheerful", "Sad", "Brave", "Smart"],
+      answerIndex: 1
     },
     {
-      question: "Which word means 'to run very fast'?",
-      options: ["Jump", "Walk", "Sprint", "Sit"],
-      answer: 2
+      question: "Choose the correct meaning of 'enormous'.",
+      options: ["Very small", "Huge", "Fast", "Funny"],
+      answerIndex: 1
     },
     {
-      question: "Choose the word that means 'a pet animal that barks'.",
-      options: ["Cat", "Dog", "Rabbit", "Bird"],
-      answer: 1
-    },
-    {
-      question: "What is the meaning of 'delicious'?",
-      options: ["Tastes good", "Looks sad", "Feels cold", "Sounds loud"],
-      answer: 0
-    },
-    {
-      question: "Which word means 'a place to learn'?",
-      options: ["Hospital", "Store", "School", "Park"],
-      answer: 2
-    },
-    {
-      question: "Choose the word that means 'very happy'.",
-      options: ["Angry", "Joyful", "Sleepy", "Hungry"],
-      answer: 1
+      question: "Select the synonym of 'quick'.",
+      options: ["Slow", "Fast", "Lazy", "Tired"],
+      answerIndex: 1
     },
     {
       question: "What does 'ancient' mean?",
-      options: ["Very old", "Very new", "Very tall", "Very fast"],
-      answer: 0
+      options: ["Very old", "New", "Expensive", "Heavy"],
+      answerIndex: 0
     },
     {
-      question: "Which word means 'a small flying insect that makes honey'?",
-      options: ["Bee", "Butterfly", "Ant", "Spider"],
-      answer: 0
-    },
-    {
-      question: "Choose the word that means 'to look at carefully'.",
-      options: ["Listen", "Touch", "Observe", "Run"],
-      answer: 2
-    },
-    {
-      question: "What does the word 'honest' mean?",
-      options: ["Truthful", "Lazy", "Brave", "Funny"],
-      answer: 0
+      question: "Choose the word that means 'to jump high'.",
+      options: ["Run", "Hop", "Fly", "Fall"],
+      answerIndex: 1
     }
   ];
 
   const quizContainer = document.getElementById('quiz-container');
   const questionEl = document.getElementById('question');
-  const optionsContainer = quizContainer.querySelector('.options');
+  const optionsEl = quizContainer.querySelector('.options');
   const feedbackEl = document.getElementById('feedback');
   const nextBtn = document.getElementById('next-btn');
   const scoreEl = document.getElementById('score');
-  const completionMessage = document.getElementById('completion-message');
+  const confettiCanvas = document.getElementById('confetti-canvas');
+  const sadContainer = document.getElementById('sad-container');
 
-  let currentQuestionIndex = 0;
+  let currentQuestion = 0;
   let score = 0;
-  let answered = false;
-
-  function shuffleArray(arr) {
-    for(let i = arr.length - 1; i > 0; i--){
-      const j = Math.floor(Math.random()* (i+1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-  }
-
-  // We want question options to be randomized for challenge
-  // But need to track correct answer index accordingly -
-  // Let's prepare data with shuffled options before starting
-  function prepareQuestions(questions) {
-    return questions.map(q => {
-      const originalAnswerText = q.options[q.answer];
-      const shuffledOptions = q.options.slice();
-      shuffleArray(shuffledOptions);
-      const newAnswerIndex = shuffledOptions.indexOf(originalAnswerText);
-      return {...q, options: shuffledOptions, answer: newAnswerIndex};
-    });
-  }
-
-  let quizQuestions = prepareQuestions(questions);
+  let animationRunning = false;
 
   function updateScore() {
-    scoreEl.textContent = `Score: ${score} / ${quizQuestions.length}`;
+    scoreEl.textContent = `Score: ${score} / ${quizData.length}`;
   }
 
   function clearFeedback() {
-    feedbackEl.textContent = "";
-    feedbackEl.style.color = "#1976d2";
+    feedbackEl.textContent = '';
+    feedbackEl.style.color = '#444';
   }
 
-  function resetOptions() {
-    optionsContainer.innerHTML = "";
+  function loadQuestion() {
+    clearFeedback();
+    nextBtn.style.display = 'none';
+    const q = quizData[currentQuestion];
+    questionEl.textContent = q.question;
+    optionsEl.innerHTML = '';
+    q.options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'option-btn';
+      btn.textContent = opt;
+      btn.dataset.index = i;
+      btn.setAttribute('aria-label', `Answer option ${i+1}: ${opt}`);
+      btn.addEventListener('click', () => selectOption(btn, i));
+      optionsEl.appendChild(btn);
+    });
+    updateScore();
+    questionEl.focus();
   }
 
   function disableOptions() {
-    const optionButtons = optionsContainer.querySelectorAll("button.option-btn");
-    optionButtons.forEach(btn => {
-      btn.classList.add("disabled");
-      btn.setAttribute("disabled", "true");
-    });
+    const btns = optionsEl.querySelectorAll('.option-btn');
+    btns.forEach(b => b.classList.add('disabled'));
   }
 
-  function enableOptions() {
-    const optionButtons = optionsContainer.querySelectorAll("button.option-btn");
-    optionButtons.forEach(btn => {
-      btn.classList.remove("disabled", "correct", "incorrect");
-      btn.removeAttribute("disabled");
-    });
+  // Confetti implementation adapted and simplified from open source approaches
+  class ConfettiParticle {
+    constructor(x, y, ctx, colors) {
+      this.x = x;
+      this.y = y;
+      this.ctx = ctx;
+      this.colors = colors;
+      this.size = (Math.random() * 7) + 7;
+      this.weight = (Math.random() * 0.5) + 0.7;
+      this.angle = Math.random() * 2 * Math.PI;
+      this.spin = (Math.random() - 0.5) * 0.2;
+      this.color = this.colors[Math.floor(Math.random() * this.colors.length)];
+      this.tilt = Math.random() * 10 - 10;
+      this.tiltSpeed = (Math.random() * 0.12) + 0.05;
+      this.opacity = 1;
+      this.life = 100;
+    }
+    update() {
+      this.y += this.weight;
+      this.x += Math.sin(this.angle) * 2;
+      this.angle += this.spin;
+      this.tilt += this.tiltSpeed;
+      this.opacity -= 0.008;
+      this.life--;
+    }
+    draw() {
+      this.ctx.beginPath();
+      this.ctx.lineWidth = this.size / 2;
+      this.ctx.strokeStyle = `rgba(${this.color},${this.opacity.toFixed(2)})`;
+      this.ctx.moveTo(this.x + this.tilt, this.y);
+      this.ctx.lineTo(this.x, this.y + this.tilt + (this.size / 2));
+      this.ctx.stroke();
+    }
+    alive() {
+      return this.opacity > 0 && this.life > 0;
+    }
   }
 
-  function animateCorrect(button) {
-    button.classList.add("correct");
-    button.classList.add("bounce");
-    setTimeout(() => {
-      button.classList.remove("bounce");
-    }, 600);
-  }
-  function animateIncorrect(button) {
-    button.classList.add("incorrect");
-    button.classList.add("shake");
-    setTimeout(() => {
-      button.classList.remove("shake");
-    }, 600);
-  }
-
-  // CSS Animations for shake and bounce to be injected dynamically because we want minimal styles
-  const style = document.createElement("style");
-  style.textContent = `
-    .shake {
-      animation: shakeAnim 0.5s;
+  class Confetti {
+    constructor(canvas) {
+      this.canvas = canvas;
+      this.ctx = canvas.getContext('2d');
+      this.particles = [];
+      this.colors = [
+        '255, 0, 0',       // red
+        '0, 255, 0',       // green
+        '0, 0, 255',       // blue
+        '255, 255, 0',     // yellow
+        '255, 0, 255',     // magenta
+        '0, 255, 255'      // cyan
+      ];
+      this.animating = false;
+      this.resize();
+      window.addEventListener('resize', () => this.resize());
     }
-    @keyframes shakeAnim {
-      0%, 100% { transform: translateX(0); }
-      20%, 60% { transform: translateX(-10px); }
-      40%, 80% { transform: translateX(10px); }
+    resize() {
+      this.canvas.width = window.innerWidth;
+      this.canvas.height = window.innerHeight;
     }
-    .bounce {
-      animation: bounceAnim 0.5s;
+    start() {
+      this.animating = true;
+      this.particles = [];
+      // generate initial confetti burst
+      const count = 150;
+      for (let i = 0; i < count; i++) {
+        const x = Math.random() * this.canvas.width;
+        const y = Math.random() * this.canvas.height/2;
+        this.particles.push(new ConfettiParticle(x, y, this.ctx, this.colors));
+      }
+      this.animate();
     }
-    @keyframes bounceAnim {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-15px); }
-    }
-  `;
-  document.head.appendChild(style);
-
-  function showQuestion() {
-    resetOptions();
-    clearFeedback();
-    enableOptions();
-
-    answered = false;
-
-    if(currentQuestionIndex >= quizQuestions.length){
-      questionEl.textContent = "";
-      completionMessage.textContent = `🎉 Well done! You scored ${score} out of ${quizQuestions.length} 🎉`;
-      nextBtn.disabled = true;
-      nextBtn.setAttribute("aria-disabled", "true");
-      return;
-    }
-
-    completionMessage.textContent = "";
-
-    const currentQ = quizQuestions[currentQuestionIndex];
-    questionEl.textContent = currentQ.question;
-
-    currentQ.options.forEach((opt, idx) => {
-      const btn = document.createElement('button');
-      btn.type = "button";
-      btn.className = "option-btn";
-      btn.textContent = opt;
-      btn.setAttribute("role", "listitem");
-      btn.setAttribute("aria-pressed", "false");
-      btn.dataset.index = idx;
-      btn.addEventListener('click', () => handleAnswer(idx, btn));
-      optionsContainer.appendChild(btn);
-    });
-
-    nextBtn.disabled = true;
-    nextBtn.setAttribute("aria-disabled", "true");
-
-    updateScore();
-  }
-
-  function handleAnswer(selectedIndex, button) {
-    if(answered) return;
-    answered = true;
-
-    const currentQ = quizQuestions[currentQuestionIndex];
-    disableOptions();
-
-    if(selectedIndex === currentQ.answer) {
-      score++;
-      feedbackEl.style.color = '#4caf50';
-      feedbackEl.textContent = "Correct! 🎉";
-      button.classList.add("correct");
-      animateCorrect(button);
-    }
-    else {
-      feedbackEl.style.color = '#e53935';
-      feedbackEl.textContent = "Try again! ❌";
-      button.classList.add("incorrect");
-      animateIncorrect(button);
-
-      // Highlight the correct answer
-      const optionButtons = optionsContainer.querySelectorAll("button.option-btn");
-      optionButtons.forEach(btn => {
-        if(parseInt(btn.dataset.index, 10) === currentQ.answer){
-          btn.classList.add("correct");
-        }
+    animate() {
+      if (!this.animating) return;
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.particles.forEach(p => {
+        p.update();
+        p.draw();
       });
+      this.particles = this.particles.filter(p => p.alive());
+      if (this.particles.length > 0) {
+        requestAnimationFrame(() => this.animate());
+      } else {
+        this.animating = false;
+        confettiCanvas.style.display = 'none';
+      }
     }
+    trigger() {
+      if (this.animating) return;
+      confettiCanvas.style.display = 'block';
+      this.start();
+    }
+  }
 
-    nextBtn.disabled = false;
-    nextBtn.removeAttribute("aria-disabled");
-    updateScore();
+  const confetti = new Confetti(confettiCanvas);
+
+  function showSadAnimation() {
+    if (animationRunning) return;
+    animationRunning = true;
+    sadContainer.style.display = 'block';
+    // Animate fadeout after 2.5s
+    sadContainer.style.opacity = '1';
+    setTimeout(() => {
+      sadContainer.style.transition = 'opacity 1s ease';
+      sadContainer.style.opacity = '0';
+    }, 2500);
+    setTimeout(() => {
+      sadContainer.style.transition = '';
+      sadContainer.style.display = 'none';
+      sadContainer.style.opacity = '1';
+      animationRunning = false;
+    }, 3500);
+  }
+
+  function selectOption(button, index) {
+    if (animationRunning) return;
+    disableOptions();
+    const correctIndex = quizData[currentQuestion].answerIndex;
+    if (index === correctIndex) {
+      button.classList.add('correct');
+      feedbackEl.textContent = "Correct! 🎉";
+      feedbackEl.style.color = "#4caf50";
+      score++;
+      updateScore();
+      confetti.trigger();
+    } else {
+      button.classList.add('incorrect');
+      // Mark correct answer
+      const correctBtn = optionsEl.querySelector(`.option-btn[data-index="${correctIndex}"]`);
+      if(correctBtn) correctBtn.classList.add('correct');
+      feedbackEl.textContent = "Oops! That's not right.";
+      feedbackEl.style.color = "#e53935";
+      showSadAnimation();
+    }
+    nextBtn.style.display = currentQuestion < quizData.length - 1 ? 'inline-block' : 'inline-block';
+    nextBtn.focus();
   }
 
   nextBtn.addEventListener('click', () => {
-    currentQuestionIndex++;
-    showQuestion();
+    currentQuestion++;
+    if (currentQuestion < quizData.length) {
+      loadQuestion();
+    } else {
+      showFinalResults();
+    }
   });
 
-  // Start quiz
-  showQuestion();
+  function showFinalResults() {
+    quizContainer.innerHTML = `
+      <div id="title">Quiz Complete!</div>
+      <div id="score" aria-live="polite">Your final score is ${score} out of ${quizData.length}.</div>
+      <div style="font-size:1.4rem; font-weight:700; margin-top:15px; text-align:center; color:#1976d2;">
+        ${score === quizData.length ? "Excellent! You got all correct! 🎉🎉🎉" :
+          score >= quizData.length/2 ? "Good job! Keep practicing! 👍" :
+          "Don't worry, try again to improve. 💪"}
+      </div>
+    `;
+  }
 
+  loadQuestion();
 })();
 
 </script>
+
 </body>
 </html>
